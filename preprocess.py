@@ -1,7 +1,7 @@
 import glob
 import numpy as np
 from PIL import Image
-
+from tqdm import tqdm
 ##  This file contains functions to load data from various datasets
 #   Images are shaped to (L,W,1) to be compatible with Conv2D layer.
 #   Pixel values range from 0 to 255 so you may need to apply a rescale layer (see CNN)
@@ -28,6 +28,55 @@ def get_CEDAR():
     genuine_files, forgery_files = get_CEDAR_filepaths()
     data = load_genuine_and_forged(genuine_files, forgery_files, 'CEDAR')
     return shuffle_data(data)
+
+def get_CEDAR_features():
+    D=[]
+    genuine_files, forgery_files = get_CEDAR_filepaths()
+    genuine_files.sort()
+    forgery_files.sort()
+    person_id = None
+
+    print("Loading genuine CEDAR features")
+    for file in tqdm(genuine_files):
+        file_id = int(file.split("_")[-1].split(".")[0])
+        if file_id > 2:
+            if person_id != file.split("_")[2]: # Trying not to load the same image over and over
+                person_id = file.split("_")[2]
+                example1 = "./data/signatures/full_org/original_" + str(person_id)+ "_1.png"
+                ex1_image = Image.open(example1).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+                ex1_data = np.asarray(ex1_image).reshape((L,W,1))
+
+                example2 = "./data/signatures/full_org/original_" + str(person_id)+ "_2.png"
+                ex2_image = Image.open(example2).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+                ex2_data = np.asarray(ex2_image).reshape((L,W,1))
+
+            image = Image.open(file).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+            im_data = np.asarray(image).reshape((L,W,1))
+            # Stack data so the first 2 channels are geunine, the last is unknown
+            features = np.dstack((ex1_data,ex2_data,im_data))
+            D.append((features, GENUINE_LABEL))
+
+    print("Loading forged CEDAR features")
+    for file in tqdm(forgery_files):
+        file_id = int(file.split("_")[-1].split(".")[0])
+        if file_id > 2:
+            if person_id != file.split("_")[2]: # Trying not to load the same image over and over
+                person_id = file.split("_")[2]
+                example1 = "./data/signatures/full_org/original_" + str(person_id)+ "_1.png"
+                ex1_image = Image.open(example1).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+                ex1_data = np.asarray(ex1_image).reshape((L,W,1))
+
+                example2 = "./data/signatures/full_org/original_" + str(person_id)+ "_2.png"
+                ex2_image = Image.open(example2).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+                ex2_data = np.asarray(ex2_image).reshape((L,W,1))
+
+            image = Image.open(file).convert('L').resize( (L,W), resample=Image.ANTIALIAS )
+            im_data = np.asarray(image).reshape((L,W,1))
+            # Stack data so the first 2 channels are geunine, the last is unknown
+            features = np.dstack((ex1_data,ex2_data,im_data))
+            D.append((features, FORGED_LABEL))
+    
+    return shuffle_data(D)
 
 def get_bengali():
     """
