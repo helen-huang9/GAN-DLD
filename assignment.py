@@ -1,12 +1,17 @@
-from preprocess import get_CEDAR
+from preprocess import *
 from models.cnn import get_CNN_model
 
 
 def train_model(model_type, dataset):
     if model_type == 'cnn':
         model = get_CNN_model()
+
     if dataset == 'cedar':
         X0, Y0, X1, Y1 = get_CEDAR()
+    elif dataset == 'bengali':
+        X0, Y0, X1, Y1 = get_bengali()
+    elif dataset == 'hindi':
+        X0, Y0, X1, Y1 = get_hindi()
 
     epochs = 3
     batch_size = 250
@@ -24,8 +29,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Process some integers.")
-    parser.add_argument("--model",    default='cnn',     choices='cnn transformer gan'.split(), help="task to perform")
-    parser.add_argument("--dataset", default="cedar", choices='cedar indian both'.split(), type=str, help="subtask to perform")
+    parser.add_argument("--model",    default='cnn',     choices='cnn transformer gan'.split(), help="model to use")
+    parser.add_argument("--dataset", default="bengali", choices='cedar bengali hindi all'.split(), type=str, help="dataset to train on")
     args = parser.parse_args()
 
     train_model(args.model, args.dataset)
