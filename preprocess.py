@@ -18,16 +18,18 @@ def get_CEDAR():
     # Load original signatures
     print("Loading CEDAR original images")
     for im_path in glob.glob(org_paths):
-        image = Image.open(im_path)
-        im_data = np.asarray(image)
-        D.append((im_data, 0))
+        image = Image.open(im_path).convert('L')
+        image = image.resize( (32, 64), resample=Image.ANTIALIAS )
+        im_data = np.asarray(image).reshape((32,64,1))
+        D.append((im_data, [1,0]))
 
     # Load forged signatures
     print("Loading CEDAR forged signatures")
     for im_path in glob.glob(forg_paths):
-        image = Image.open(im_path)
-        im_data = np.asarray(image)
-        D.append((im_data, 1))
+        image = Image.open(im_path).convert('L')
+        image = image.resize( (32,64), resample=Image.ANTIALIAS )
+        im_data = np.asarray(image).reshape((32,64,1))
+        D.append((im_data, [0,1]))
     
     # Shuffle dataset
     rng = np.random.default_rng()
@@ -38,4 +40,5 @@ def get_CEDAR():
     test = D[split:]
     X0, Y0 = zip(*train)
     X1, Y1 = zip(*test)
-    return X0, Y0, X1, Y1
+
+    return np.array(X0), np.array(Y0), np.array(X1), np.array(Y1)
