@@ -30,6 +30,16 @@ def get_CEDAR():
     return shuffle_data(data)
 
 def get_CEDAR_features():
+    """
+    Loads CEDAR dataset and featurizes data. The dataset needs to be extracted from .rar file first
+    Most CEDAR images appear to be about 1:2 for aspect ratio
+
+    For each image, it adds 2 genuine images to try and get the model to compare with. 
+    :return X0: training images,
+            Y0: training labels,
+            X1: testing images,
+            Y1: testing labels
+    """
     D=[]
     genuine_files, forgery_files = get_CEDAR_filepaths()
     genuine_files.sort()
