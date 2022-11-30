@@ -6,12 +6,14 @@ def train_model(model_type, dataset):
     if model_type == 'cnn':
         model = get_CNN_model()
 
-    if dataset == 'cedar':
-        X0, Y0, X1, Y1 = get_CEDAR()
+    if dataset == 'all':
+        X0, Y0, X1, Y1 = get_all()
     elif dataset == 'bengali':
         X0, Y0, X1, Y1 = get_bengali()
     elif dataset == 'hindi':
         X0, Y0, X1, Y1 = get_hindi()
+    else:
+        X0, Y0, X1, Y1 = get_CEDAR()
 
     epochs = 3
     batch_size = 250
