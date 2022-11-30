@@ -1,10 +1,14 @@
 from preprocess import *
 from models.cnn import get_CNN_model
+from models.transformer import get_transformer_model
 
 
 def train_model(model_type, dataset):
-    if model_type == 'cnn':
+    if model_type == 'transformer':
+        model = get_transformer_model()
+    else:
         model = get_CNN_model()
+    
 
     if dataset == 'all':
         X0, Y0, X1, Y1 = get_all()
@@ -15,11 +19,11 @@ def train_model(model_type, dataset):
     elif dataset == 'hindi':
         X0, Y0, X1, Y1 = get_hindi()
     else:
-        # X0, Y0, X1, Y1 = get_CEDAR_features()
-        X0, Y0, X1, Y1 = get_CEDAR()
+        X0, Y0, X1, Y1 = get_CEDAR_features()
+        # X0, Y0, X1, Y1 = get_CEDAR()
 
     epochs = 3
-    batch_size = 250
+    batch_size = 50
 
     print("Starting to train model")
     history = model.fit(
