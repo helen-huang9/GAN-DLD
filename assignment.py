@@ -8,6 +8,8 @@ def train_model(model_type, dataset):
 
     if dataset == 'all':
         X0, Y0, X1, Y1 = get_all()
+    elif dataset == 'indian':
+        X0, Y0, X1, Y1 = get_indian()
     elif dataset == 'bengali':
         X0, Y0, X1, Y1 = get_bengali()
     elif dataset == 'hindi':
@@ -32,7 +34,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("--model",    default='cnn',     choices='cnn transformer gan'.split(), help="model to use")
-    parser.add_argument("--dataset", default="bengali", choices='cedar bengali hindi all'.split(), type=str, help="dataset to train on")
+    parser.add_argument("--dataset", default="bengali", choices='cedar bengali hindi indian all'.split(), type=str, help="dataset to train on")
     args = parser.parse_args()
 
     train_model(args.model, args.dataset)

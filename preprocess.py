@@ -15,7 +15,8 @@ W = 128
 GENUINE_LABEL = [1,0]
 FORGED_LABEL = [0,1]
 
-def get_CEDAR(mixing=False):
+
+def get_CEDAR():
     """
     Loads CEDAR dataset. The dataset needs to be extracted from .rar file first
     Most CEDAR images appear to be about 1:2 for aspect ratio
@@ -24,74 +25,71 @@ def get_CEDAR(mixing=False):
             X1: testing images,
             Y1: testing labels
     """
-
-    org_paths = glob.glob('./data/signatures/full_org/*.png')
-    forg_paths = glob.glob('./data/signatures/full_forg/*.png')
-    data = load_genuine_and_forged(org_paths, forg_paths, 'CEDAR')
+    genuine_files, forgery_files = get_CEDAR_filepaths()
+    data = load_genuine_and_forged(genuine_files, forgery_files, 'CEDAR')
     return shuffle_data(data)
 
 def get_bengali():
     """
-    See get_indian
+    Loads Bengali dataset
     """
-    return get_indian('Bengali')
+    genuine, forged = get_indian_paths('Hindi')
+    data = load_genuine_and_forged(genuine, forged, 'Hindi')
+    return shuffle_data(data)
+
 
 def get_hindi():
     """
-    See get_indian
+    Load Hindi dataset
     """
-    return get_indian('Hindi')
+    genuine, forged = get_indian_paths('Hindi')
+    data = load_genuine_and_forged(genuine, forged, 'Hindi')
+    return shuffle_data(data)
 
-def get_indian(language):
+def get_indian():
     """
-    Gets data for either the Bengali or Hindi dataset depending on language
-    Uses helper files list.genuine and list.forgery to get list of file 
-    names in each class
-    
-    :param language: either 'Bengali' or 'Hindi'
+    Gets data for both the Bengali or Hindi dataset    
     :return X0: training images,
             Y0: training labels,
             X1: testing images,
             Y1: testing labels
     """
-    base_path = './data/BHSig260/' + language + '/'
-    gfp = base_path+'list.genuine'
-    ffp = base_path+'list.forgery'
-    genuine_files = open(gfp, 'r').read().splitlines()
-    forged_files = open(ffp, 'r').read().splitlines()
-    genuine_files = [base_path+file for file in genuine_files]
-    forged_files = [base_path+file for file in forged_files]
-
-    data = load_genuine_and_forged(genuine_files, forged_files, language)
-    return shuffle_data(data)
+    D = []
+    # Bengali
+    genuine_files, forgery_files = get_indian_paths('Bengali')
+    D += load_genuine_and_forged(genuine_files, forgery_files, 'Bengali')
+    # Hindi
+    genuine_files, forgery_files = get_indian_paths('Hindi')
+    D += load_genuine_and_forged(genuine_files, forgery_files, 'Hindi')
+    return shuffle_data(D)
 
 def get_all():
+    """
+    Gets data for CEDAR, Bengali, and Hindi datasets
+    :return X0: training images,
+            Y0: training labels,
+            X1: testing images,
+            Y1: testing labels
+    """
     D = []
     # CEDAR
-    org_paths = glob.glob('./data/signatures/full_org/*.png')
-    forg_paths = glob.glob('./data/signatures/full_forg/*.png')
-    D += load_genuine_and_forged(org_paths, forg_paths, 'CEDAR')
+    genuine_files, forgery_files = get_CEDAR_filepaths()
+    D += load_genuine_and_forged(genuine_files, forgery_files, 'CEDAR')
     # Bengali
-    base_path = './data/BHSig260/Bengali/'
-    gfp = base_path+'list.genuine'
-    ffp = base_path+'list.forgery'
-    genuine_files = open(gfp, 'r').read().splitlines()
-    forged_files = open(ffp, 'r').read().splitlines()
-    genuine_files = [base_path+file for file in genuine_files]
-    forged_files = [base_path+file for file in forged_files]
-    D += load_genuine_and_forged(genuine_files, forged_files, 'Bengali')
+    genuine_files, forgery_files = get_indian_paths('Bengali')
+    D += load_genuine_and_forged(genuine_files, forgery_files, 'Bengali')
     # Hindi
-    base_path = './data/BHSig260/Hindi/'
-    gfp = base_path+'list.genuine'
-    ffp = base_path+'list.forgery'
-    genuine_files = open(gfp, 'r').read().splitlines()
-    forged_files = open(ffp, 'r').read().splitlines()
-    genuine_files = [base_path+file for file in genuine_files]
-    forged_files = [base_path+file for file in forged_files]
-    D += load_genuine_and_forged(genuine_files, forged_files, 'Hindi')
+    genuine_files, forgery_files = get_indian_paths('Hindi')
+    D += load_genuine_and_forged(genuine_files, forgery_files, 'Hindi')
     return shuffle_data(D)
 
 def load_genuine_and_forged(genuine_files, forged_files, dataset):
+    """
+    Loads data given lists of genuine and forgery file paths.
+    Returns a single array where each element is tuple(image, label).
+
+    :return D [tuple(np.array , List<int>)]: 
+    """
     D = []
     print("Loading genuine " + dataset + " files")
     for file in genuine_files:
@@ -110,6 +108,14 @@ def load_genuine_and_forged(genuine_files, forged_files, dataset):
     return D
 
 def shuffle_data(data):
+    """
+    Takes a list of data samples, shuffles them and splits them into
+    training and test images and labels
+    :return X0: training images,
+            Y0: training labels,
+            X1: testing images,
+            Y1: testing labels
+    """
     rng = np.random.default_rng()
     rng.shuffle(data)
 
@@ -120,3 +126,22 @@ def shuffle_data(data):
     X1, Y1 = zip(*test)
 
     return np.array(X0), np.array(Y0), np.array(X1), np.array(Y1)
+
+
+###############################################################################################
+## Helper functions to get lists of file paths for datasets
+
+def get_indian_paths(language):
+    base_path = './data/BHSig260/' + language + '/'
+    gfp = base_path+'list.genuine'
+    ffp = base_path+'list.forgery'
+    genuine_files = open(gfp, 'r').read().splitlines()
+    forged_files = open(ffp, 'r').read().splitlines()
+    genuine_files = [base_path+file for file in genuine_files]
+    forged_files = [base_path+file for file in forged_files]
+    return genuine_files, forged_files
+
+def get_CEDAR_filepaths():
+    org_paths = glob.glob('./data/signatures/full_org/*.png')
+    forg_paths = glob.glob('./data/signatures/full_forg/*.png')
+    return org_paths, forg_paths
