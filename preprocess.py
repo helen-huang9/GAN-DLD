@@ -27,32 +27,9 @@ def get_CEDAR():
             X1: testing images,
             Y1: testing labels
     """
-    genuine_files, forged_files = get_CEDAR_filepaths()
-    D = []
-    print("Loading genuine CEDAR files")
-    for file in genuine_files:
-        image = Image.open(file).convert('L')
-        image = image.resize( (L,W), resample=Image.ANTIALIAS )
-        im_data = np.asarray(image).reshape((L,W,1))
-        D.append((im_data, 0))
-
-    print("Loading forged CEDAR files")
-    for file in forged_files:
-        image = Image.open(file).convert('L')
-        image = image.resize( (L,W), resample=Image.ANTIALIAS )
-        im_data = np.asarray(image).reshape((L,W,1))
-        D.append((im_data, 1))
-
-    rng = np.random.default_rng()
-    rng.shuffle(D)
-
-    split = int(len(D)*0.8)
-    train = D[:split]
-    test = D[split:]
-    X0, Y0 = zip(*train)
-    X1, Y1 = zip(*test)
-
-    return np.array(X0), np.array(Y0), np.array(X1), np.array(Y1)
+    genuine_files, forgery_files = get_CEDAR_filepaths()
+    data = load_genuine_and_forged(genuine_files, forgery_files, 'CEDAR')
+    return shuffle_data(data)
 
 def get_CEDAR_features():
     """

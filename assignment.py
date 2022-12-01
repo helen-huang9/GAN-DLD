@@ -4,15 +4,6 @@ from models.transformer import get_transformer_model
 
 
 def train_model(model_type, dataset):
-    epochs = 10
-    batch_size = 50
-
-    if model_type == 'transformer':
-        model = get_transformer_model()
-    else:
-        model = get_siamese_model() # CNN Model Default
-    
-
     if dataset == 'all':
         if model_type == 'cnn':
             X0, Y0, X1, Y1 = get_all_siamese()
@@ -33,17 +24,31 @@ def train_model(model_type, dataset):
         else:
             X0, Y0, X1, Y1 = get_hindi()
     else:
-        X0, Y0, X1, Y1 = get_CEDAR_siamese()
+        if model_type == 'cnn':
+            X0, Y0, X1, Y1 = get_CEDAR_siamese()
+        else:
+            X0, Y0, X1, Y1 = get_CEDAR_features()
 
+    epochs = 10
+    batch_size = 50
 
-
-    print("Starting to train model")
-    history = model.fit(
-        [X0[:,0], X0[:,1]], Y0,
-        epochs      = epochs,
-        batch_size  = batch_size,
-        validation_data = ([X1[:,0], X1[:,1]], Y1)
-    )
+    if model_type == 'transformer':
+        model = get_transformer_model()
+        history = model.fit(
+            X0, Y0,
+            epochs      = epochs,
+            batch_size  = batch_size,
+            validation_data = (X1, Y1)
+        )
+    else:
+        model = get_siamese_model() # CNN Model Default
+        print("Starting to train model")
+        history = model.fit(
+            [X0[:,0], X0[:,1]], Y0,
+            epochs      = epochs,
+            batch_size  = batch_size,
+            validation_data = ([X1[:,0], X1[:,1]], Y1)
+        )
 
     return model
 if __name__ == "__main__":
