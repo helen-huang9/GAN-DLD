@@ -22,7 +22,7 @@ def make_siamese_pairs(images, labels):
         negative_image = images[np.random.choice(neg_idx)]
         pair_images.append([current_image, negative_image])
         pair_labels.append([0])
-    return np.array(pair_images), np.array(pair_labels)
+    return pair_images, pair_labels
 
 def euclidean_distance(vectors):
     # unpack the vectors into separate lists

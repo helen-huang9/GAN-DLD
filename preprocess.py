@@ -2,6 +2,7 @@ import glob
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+from utils import make_siamese_pairs
 ##  This file contains functions to load data from various datasets
 #   Images are shaped to (L,W,1) to be compatible with Conv2D layer.
 #   Pixel values range from 0 to 255 so you may need to apply a rescale layer (see CNN)
@@ -227,3 +228,47 @@ def get_CEDAR_filepaths():
     org_paths = glob.glob('./data/signatures/full_org/*.png')
     forg_paths = glob.glob('./data/signatures/full_forg/*.png')
     return org_paths, forg_paths
+
+
+############################################################################
+#  Siamese CNN Dataloader
+
+def get_CEDAR_siamese():
+    people_ids = [i for i in range(1,56)]
+    all_pairs, all_labels = [],[]
+    for id in tqdm(people_ids):
+        id = 1
+        person_images = []
+        person_labels = []
+        genuine_paths = glob.glob('./data/signatures/full_org/original_' + str(id) + '_*.png')
+        forged_paths = glob.glob('./data/signatures/full_forg/forgeries_' + str(id) + '_*.png')
+        for file in genuine_paths:
+            image = Image.open(file).convert('L')
+            image = image.resize( (L,W), resample=Image.ANTIALIAS )
+            im_data = np.asarray(image).reshape((L,W,1))
+            person_images.append(im_data)
+            person_labels.append(0)
+
+        for file in forged_paths:
+            image = Image.open(file).convert('L')
+            image = image.resize( (L,W), resample=Image.ANTIALIAS )
+            im_data = np.asarray(image).reshape((L,W,1))
+            person_images.append(im_data)
+            person_labels.append(1)
+
+        pairs, labels = make_siamese_pairs(np.array(person_images), np.array(person_labels))
+        all_pairs += pairs
+        all_labels += labels
+
+
+    temp = list(zip(all_pairs, all_labels))
+    rng = np.random.default_rng()
+    rng.shuffle(temp)
+
+    all_pairs, all_labels = zip(*temp)
+    split = int(len(all_pairs)*0.8)
+    train_pairs = all_pairs[:split]
+    train_labels = all_labels[:split]
+    test_pairs = all_pairs[split:]
+    test_labels = all_labels[split:]
+    return np.array(train_pairs), np.array(train_labels), np.array(test_pairs), np.array(test_labels)    
