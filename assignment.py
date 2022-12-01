@@ -1,13 +1,15 @@
 from preprocess import *
-from models.cnn import get_CNN_model
+from models.cnn import get_CNN_model, get_siamese_model
 from models.transformer import get_transformer_model
+from utils import make_siamese_pairs
 
 
 def train_model(model_type, dataset):
     if model_type == 'transformer':
         model = get_transformer_model()
     else:
-        model = get_CNN_model()
+        # model = get_CNN_model()
+        model = get_siamese_model()
     
 
     if dataset == 'all':
@@ -19,7 +21,10 @@ def train_model(model_type, dataset):
     elif dataset == 'hindi':
         X0, Y0, X1, Y1 = get_hindi()
     else:
-        X0, Y0, X1, Y1 = get_CEDAR_features()
+        X0, Y0, X1, Y1 = get_CEDAR()
+        pairs_train, labels_train = make_siamese_pairs(X0, Y0)
+        pairs_test, labels_test = make_siamese_pairs(X1, Y1)
+        # X0, Y0, X1, Y1 = get_CEDAR_features()
         # X0, Y0, X1, Y1 = get_CEDAR()
 
     epochs = 3
@@ -27,10 +32,10 @@ def train_model(model_type, dataset):
 
     print("Starting to train model")
     history = model.fit(
-        X0, Y0,
+        [pairs_train[:,0], pairs_train[:,1]], labels_train,
         epochs      = epochs,
         batch_size  = batch_size,
-        validation_data = (X1, Y1)
+        validation_data = ([pairs_test[:,0], pairs_test[:,1]], labels_test)
     )
 
     return model
