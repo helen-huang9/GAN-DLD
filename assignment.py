@@ -4,6 +4,9 @@ from models.transformer import get_transformer_model
 
 
 def train_model(model_type, dataset):
+    epochs = 10
+    batch_size = 50
+
     if model_type == 'transformer':
         model = get_transformer_model()
     else:
@@ -11,18 +14,28 @@ def train_model(model_type, dataset):
     
 
     if dataset == 'all':
-        X0, Y0, X1, Y1 = get_all()
+        if model_type == 'cnn':
+            X0, Y0, X1, Y1 = get_all_siamese()
+            epochs = 5
+            batch_size = 100
+        else: 
+            X0, Y0, X1, Y1 = get_all()
     elif dataset == 'indian':
         X0, Y0, X1, Y1 = get_indian()
     elif dataset == 'bengali':
-        X0, Y0, X1, Y1 = get_bengali()
+        if model_type == 'cnn':
+            X0, Y0, X1, Y1 = get_indian_siamese('Bengali')
+        else:
+            X0, Y0, X1, Y1 = get_bengali()
     elif dataset == 'hindi':
-        X0, Y0, X1, Y1 = get_hindi()
+        if model_type == 'cnn':
+            X0, Y0, X1, Y1 = get_indian_siamese('Hindi')
+        else:
+            X0, Y0, X1, Y1 = get_hindi()
     else:
         X0, Y0, X1, Y1 = get_CEDAR_siamese()
 
-    epochs = 10
-    batch_size = 50
+
 
     print("Starting to train model")
     history = model.fit(

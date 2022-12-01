@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 from utils import make_siamese_pairs
+import os
 ##  This file contains functions to load data from various datasets
 #   Images are shaped to (L,W,1) to be compatible with Conv2D layer.
 #   Pixel values range from 0 to 255 so you may need to apply a rescale layer (see CNN)
@@ -236,39 +237,71 @@ def get_CEDAR_filepaths():
 def get_CEDAR_siamese():
     people_ids = [i for i in range(1,56)]
     all_pairs, all_labels = [],[]
+    print("Loading CEDAR siamese pairs...")
     for id in tqdm(people_ids):
-        id = 1
-        person_images = []
-        person_labels = []
         genuine_paths = glob.glob('./data/signatures/full_org/original_' + str(id) + '_*.png')
         forged_paths = glob.glob('./data/signatures/full_forg/forgeries_' + str(id) + '_*.png')
-        for file in genuine_paths:
-            image = Image.open(file).convert('L')
-            image = image.resize( (L,W), resample=Image.ANTIALIAS )
-            im_data = np.asarray(image).reshape((L,W,1))
-            person_images.append(im_data)
-            person_labels.append(0)
-
-        for file in forged_paths:
-            image = Image.open(file).convert('L')
-            image = image.resize( (L,W), resample=Image.ANTIALIAS )
-            im_data = np.asarray(image).reshape((L,W,1))
-            person_images.append(im_data)
-            person_labels.append(1)
-
-        pairs, labels = make_siamese_pairs(np.array(person_images), np.array(person_labels))
+        pairs, labels = get_siamese_data(genuine_paths, forged_paths)
         all_pairs += pairs
         all_labels += labels
 
+    temp = list(zip(all_pairs, all_labels))
+    return shuffle_data(temp)
+
+def get_indian_siamese(language):
+    base_path = './data/BHSig260/'+language
+    people_ids = [d for d in os.listdir(base_path) if d.isdigit()]
+    all_pairs, all_labels = [],[]
+    print("Loading " + language + " siamese pairs...")
+    for id in tqdm(people_ids):
+        person_files = glob.glob(base_path + '/' + id + '/*.tif')
+        genuine_paths = [path for path in person_files if 'G' in path]
+        forged_paths = [path for path in person_files if 'F' in path]
+        pairs, labels = get_siamese_data(genuine_paths, forged_paths)
+        all_pairs += pairs
+        all_labels += labels
 
     temp = list(zip(all_pairs, all_labels))
-    rng = np.random.default_rng()
-    rng.shuffle(temp)
+    return shuffle_data(temp)
 
-    all_pairs, all_labels = zip(*temp)
-    split = int(len(all_pairs)*0.8)
-    train_pairs = all_pairs[:split]
-    train_labels = all_labels[:split]
-    test_pairs = all_pairs[split:]
-    test_labels = all_labels[split:]
-    return np.array(train_pairs), np.array(train_labels), np.array(test_pairs), np.array(test_labels)    
+def get_all_siamese():
+    X0, Y0, X1, Y1 = get_CEDAR_siamese()
+    for lang in ['Bengali']:
+    # for lang in ['Bengali', 'Hindi']:
+        a0, b0, a1, b1 = get_indian_siamese(lang)
+        X0 = np.append(X0, a0, axis=0)
+        Y0 = np.append(Y0, b0, axis=0)
+        X1 = np.append(X1, a1, axis=0)
+        Y1 = np.append(Y1, b1, axis=0)
+    # Shuffle data
+    p0 = np.random.permutation(len(X0))
+    p1 = np.random.permutation(len(X1))
+    print("Permutating train ims")
+    X0 = X0[p0]
+    print("Permutating train labels")
+    Y0 = Y0[p0]
+    print("Permutating test ims")
+    X1 = X1[p1]
+    print("Permutating test labels")
+    Y1 = Y1[p1]
+    return X0, Y0, X1, Y1
+
+def get_siamese_data(genuine_paths, forged_paths):
+    person_images = []
+    person_labels = []
+    for file in genuine_paths:
+        image = Image.open(file).convert('L')
+        image = image.resize( (L,W), resample=Image.ANTIALIAS )
+        im_data = np.asarray(image).reshape((L,W,1))
+        person_images.append(im_data)
+        person_labels.append(0)
+
+    for file in forged_paths:
+        image = Image.open(file).convert('L')
+        image = image.resize( (L,W), resample=Image.ANTIALIAS )
+        im_data = np.asarray(image).reshape((L,W,1))
+        person_images.append(im_data)
+        person_labels.append(1)
+
+    pairs, labels = make_siamese_pairs(np.array(person_images), np.array(person_labels))
+    return pairs, labels
