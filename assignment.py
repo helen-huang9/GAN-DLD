@@ -2,7 +2,8 @@ from preprocess import *
 from models.cnn import get_siamese_model
 from models.transformer import get_transformer_model
 from sklearn.metrics import confusion_matrix
-import tensorflow as tf 
+import tensorflow as tf
+
 
 def train_model(model_type, dataset):
     if dataset == 'all':
@@ -14,14 +15,14 @@ def train_model(model_type, dataset):
     else:
         X0, Y0, X1, Y1 = get_CEDAR_siamese()
 
-    epochs = 10
+    epochs = 1
     batch_size = 50
 
     if model_type == 'transformer':
         model = get_transformer_model()
     else:
-        model = get_siamese_model() # CNN Model Default
-    
+        model = get_siamese_model()  # CNN Model Default
+
     print("Starting to train model")
     history = model.fit(
         [X0[:,0], X0[:,1]], Y0,
@@ -31,8 +32,15 @@ def train_model(model_type, dataset):
     )
 
     y_true = Y1
-    y_pred = tf.round(model([X1[:,0], X1[:,1]]))
+    y = model([X1[:, 0], X1[:, 1]])
+    y_pred = tf.round(y)
     confusion = confusion_matrix(y_true, y_pred)
+    #           |  pred0 | pred1 |
+    # Actually 0|________|_______|
+    # Actually 1|________|_______|
+    print("Model Predictions:")
+    print(y)
+    print("Confusion matrix:")
     print(confusion)
     return model
 if __name__ == "__main__":

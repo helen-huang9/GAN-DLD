@@ -32,7 +32,7 @@ def get_siamese_model(embed_size=48):
     model.compile(
         optimizer=tf.keras.optimizers.Adam(),  ## feel free to change
         loss="binary_crossentropy",  ## do not change loss/metrics
-        metrics=["accuracy"],
+        metrics=["binary_accuracy"],
     )
     
     return model

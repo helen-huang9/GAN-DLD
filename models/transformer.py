@@ -19,8 +19,8 @@ transformer_units = [
     projection_dim * 2,
     projection_dim,
 ]  # Size of the transformer layers
-transformer_layers = 3
-mlp_head_units = [512, 2]  # Size of the dense layers of the final classifier
+transformer_layers = 1
+mlp_head_units = [128, 64, 2]  # Size of the dense layers of the final classifier
 
 
 data_augmentation = keras.Sequential(
@@ -128,8 +128,10 @@ def get_transformer_model():
     representation = tf.keras.layers.Dropout(0.5)(representation)
     # Add MLP.
     features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.5)
+    ff = tf.keras.layers.Dense(512)(features)
+    ff = tf.keras.layers.Dense(128)(ff)
     # Classify outputs.
-    logits = tf.keras.layers.Dense(1)(features)
+    logits = tf.keras.layers.Dense(1, activation='sigmoid')(features)
     # Create the Keras model.
     model = tf.keras.Model(inputs=[im_A, im_B], outputs=logits)
 
