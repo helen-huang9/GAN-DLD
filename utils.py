@@ -10,12 +10,13 @@ def make_siamese_pairs(images, labels):
     for idxA in range(len(images)):
         current_image = images[idxA]
         label = labels[idxA]
-
+        
         # randomly pick an image that belong to the same class
-        pos_idx = np.random.choice(idx[label])
-        positive_image = images[pos_idx]
-        pair_images.append([current_image, positive_image])
-        pair_labels.append([1])
+        if label != 1:
+            pos_idx = np.random.choice(idx[label])
+            positive_image = images[pos_idx]
+            pair_images.append([current_image, positive_image])
+            pair_labels.append([1])
 
         # Randomly pick an image that belongs to the other class
         neg_idx = np.where(labels != label)[0]
