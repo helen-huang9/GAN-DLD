@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 num_classes = 2
-input_shape = (64,128,3)
+input_shape = (64,128,1)
 
 learning_rate = 0.001
 weight_decay = 0.0001
@@ -86,45 +86,50 @@ def get_transformer_model():
     encoded_patch_A = PatchEncoder(num_patches, projection_dim)(patch_A)
     encoded_patch_B = PatchEncoder(num_patches, projection_dim)(patch_B)
 
+    addition_layer = tf.keras.layers.Add()
     # Create multiple layers of the Transformer block.
     for _ in range(transformer_layers):
         # Layer normalization 1.
-        x1_A = tf.keras.layers.LayerNormalization(epsilon=1e-6)(encoded_patch_A)
-        x1_B = tf.keras.layers.LayerNormalization(epsilon=1e-6)(encoded_patch_B)
+        layer_norm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        x1_A = layer_norm1(encoded_patch_A)
+        x1_B = layer_norm1(encoded_patch_B)
         # Create a multi-head attention layer.
-        attention_output_A = tf.keras.layers.MultiHeadAttention(
+        attention1 = tf.keras.layers.MultiHeadAttention(
             num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-        )(x1_A, x1_A)
-        attention_output_B = tf.keras.layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-        )(x1_B, x1_B)
+        )
+        attention_output_A = attention1(x1_A, x1_A)
+        attention_output_B = attention1(x1_B, x1_B)
         # Residual connection 1.
-        x2_A = tf.keras.layers.Add()([attention_output_A, encoded_patch_A])
-        x2_B = tf.keras.layers.Add()([attention_output_B, encoded_patch_B])
+        x2_A = addition_layer([attention_output_A, encoded_patch_A])
+        x2_B = addition_layer([attention_output_B, encoded_patch_B])
         # Layer normalization 2.
-        x3_A = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x2_A)
-        x3_B = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x2_B)
-        # MLP.
+        layer_norm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        x3_A = layer_norm2(x2_A)
+        x3_B = layer_norm2(x2_B)
+        # Feed forward layer
         x3_A = mlp(x3_A, hidden_units=transformer_units, dropout_rate=0.1)
         x3_B = mlp(x3_B, hidden_units=transformer_units, dropout_rate=0.1)
         # Residual connection 2.
-        x3_A = tf.keras.layers.Add()([x3_A, x2_A])
-        x3_B = tf.keras.layers.Add()([x3_B, x2_B])
-        # Layer normalization 2.
-        x3_A = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3_A)
-        x3_B = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3_B)
+        encoded_patch_A = addition_layer([x3_A, x2_A])
+        encoded_patch_B = addition_layer([x3_B, x2_B])
 
+    # Final layer norm
+    layer_norm_out = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+    a_out = layer_norm_out(encoded_patch_A)
+    b_out = layer_norm_out(encoded_patch_B)
+    # Cross attention
     cross_attention_output = tf.keras.layers.MultiHeadAttention(
             num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-    )(x1_A, x1_B)
+    )(a_out, b_out)
     # Create a [batch_size, projection_dim] tensor.
+    # Not including addition because I wouldn't know which one to use
     representation = tf.keras.layers.LayerNormalization(epsilon=1e-6)(cross_attention_output)
     representation = tf.keras.layers.Flatten()(representation)
     representation = tf.keras.layers.Dropout(0.5)(representation)
     # Add MLP.
     features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.5)
     # Classify outputs.
-    logits = tf.keras.layers.Dense(1, activation='sigmoid')(features)
+    logits = tf.keras.layers.Dense(1)(features)
     # Create the Keras model.
     model = tf.keras.Model(inputs=[im_A, im_B], outputs=logits)
 
