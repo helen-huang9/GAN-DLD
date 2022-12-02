@@ -1,7 +1,8 @@
 from preprocess import *
 from models.cnn import get_siamese_model
 from models.transformer import get_transformer_model
-
+from sklearn.metrics import confusion_matrix
+import tensorflow as tf 
 
 def train_model(model_type, dataset):
     if dataset == 'all':
@@ -29,6 +30,10 @@ def train_model(model_type, dataset):
         validation_data = ([X1[:,0], X1[:,1]], Y1)
     )
 
+    y_true = Y1
+    y_pred = tf.round(model([X1[:,0], X1[:,1]]))
+    confusion = confusion_matrix(y_true, y_pred)
+    print(confusion)
     return model
 if __name__ == "__main__":
     import argparse

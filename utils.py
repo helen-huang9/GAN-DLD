@@ -19,10 +19,11 @@ def make_siamese_pairs(images, labels):
             pair_labels.append([1])
 
         # Randomly pick an image that belongs to the other class
-        neg_idx = np.where(labels != label)[0]
-        negative_image = images[np.random.choice(neg_idx)]
-        pair_images.append([current_image, negative_image])
-        pair_labels.append([0])
+        if np.random.rand() >= 0.5:
+            neg_idx = np.where(labels != label)[0]
+            negative_image = images[np.random.choice(neg_idx)]
+            pair_images.append([current_image, negative_image])
+            pair_labels.append([0])
     return pair_images, pair_labels
 
 def euclidean_distance(vectors):
