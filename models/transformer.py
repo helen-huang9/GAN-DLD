@@ -2,44 +2,13 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from utils import euclidean_distance
 
-num_classes = 2
-input_shape = (64,128,1)
-
-learning_rate = 0.001
-weight_decay = 0.0001
-batch_size = 256
-num_epochs = 100
-image_size = (32,64)  # We'll resize input images to this size
+image_size = (64,128)  # We'll resize input images to this size
 patch_size = 4  # Size of the patches to be extract from the input images
 num_patches = (image_size[0] // patch_size) * (image_size[1] // patch_size)
 projection_dim = 64
-num_heads = 4
-transformer_units = [
-    projection_dim * 2,
-    projection_dim,
-]  # Size of the transformer layers
-transformer_layers = 1
-mlp_head_units = [128, 64, 2]  # Size of the dense layers of the final classifier
-
-
-data_augmentation = keras.Sequential(
-    [
-        tf.keras.layers.Normalization(),
-        tf.keras.layers.Resizing(*image_size),
-        tf.keras.layers.RandomFlip("horizontal"),
-        tf.keras.layers.RandomRotation(factor=0.02),
-        tf.keras.layers.RandomZoom(
-            height_factor=0.2, width_factor=0.2
-        ),
-    ],
-    name="data_augmentation",
-)
-def mlp(x, hidden_units, dropout_rate):
-    for units in hidden_units:
-        x = tf.keras.layers.Dense(units, activation=tf.nn.gelu)(x)
-        x = tf.keras.layers.Dropout(dropout_rate)(x)
-    return x
+num_heads = 3
 
 class Patches(keras.layers.Layer):
     def __init__(self, patch_size):
@@ -73,70 +42,48 @@ class PatchEncoder(keras.layers.Layer):
         encoded = self.projection(patch) + self.position_embedding(positions)
         return encoded 
 
-def get_transformer_model():
-    im_A = keras.layers.Input(shape=input_shape)
-    im_B = keras.layers.Input(shape=input_shape)
-    # Augment data.
-    aug_A = data_augmentation(im_A)
-    aug_B = data_augmentation(im_B)
-    # Create patches.
-    patch_A = Patches(patch_size)(aug_A)
-    patch_B = Patches(patch_size)(aug_B)
-    # Encode patches.
-    encoded_patch_A = PatchEncoder(num_patches, projection_dim)(patch_A)
-    encoded_patch_B = PatchEncoder(num_patches, projection_dim)(patch_B)
+class EncoderBlock(tf.keras.layers.Layer):
+    def __init__(self, emb_sz, num_heads):
+        super(EncoderBlock, self).__init__()
+        self.ff_layer = tf.keras.layers.Dense(emb_sz)
+        self.self_atten = tf.keras.layers.MultiHeadAttention(num_heads=num_heads, key_dim=emb_sz)
+        self.layer_norm = tf.keras.layers.LayerNormalization() # Could make 2 different layer norms
+    def call(self, inputs):
+        attention = self.self_atten(inputs,inputs)
+        attention += inputs
+        attention = self.layer_norm(attention)
+        out = self.ff_layer(attention)
+        out += attention
+        out = self.layer_norm(out)
+        return out
 
-    addition_layer = tf.keras.layers.Add()
-    # Create multiple layers of the Transformer block.
-    for _ in range(transformer_layers):
-        # Layer normalization 1.
-        layer_norm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        x1_A = layer_norm1(encoded_patch_A)
-        x1_B = layer_norm1(encoded_patch_B)
-        # Create a multi-head attention layer.
-        attention1 = tf.keras.layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-        )
-        attention_output_A = attention1(x1_A, x1_A)
-        attention_output_B = attention1(x1_B, x1_B)
-        # Residual connection 1.
-        x2_A = addition_layer([attention_output_A, encoded_patch_A])
-        x2_B = addition_layer([attention_output_B, encoded_patch_B])
-        # Layer normalization 2.
-        layer_norm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        x3_A = layer_norm2(x2_A)
-        x3_B = layer_norm2(x2_B)
-        # Feed forward layer
-        x3_A = mlp(x3_A, hidden_units=transformer_units, dropout_rate=0.1)
-        x3_B = mlp(x3_B, hidden_units=transformer_units, dropout_rate=0.1)
-        # Residual connection 2.
-        encoded_patch_A = addition_layer([x3_A, x2_A])
-        encoded_patch_B = addition_layer([x3_B, x2_B])
+def get_encoder_model(embed_size=48):
+    encoder = tf.keras.Sequential([
+        # Rescale input
+        tf.keras.layers.Rescaling(scale=1/255),
+        # Encoding
+        Patches(patch_size),
+        PatchEncoder(num_patches, projection_dim),
+        EncoderBlock(emb_sz=projection_dim, num_heads=num_heads),
+        tf.keras.layers.Dense(embed_size)
+    ])
+    return encoder
 
-    # Final layer norm
-    layer_norm_out = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-    a_out = layer_norm_out(encoded_patch_A)
-    b_out = layer_norm_out(encoded_patch_B)
-    # Cross attention
-    cross_attention_output = tf.keras.layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-    )(a_out, b_out)
-    # Create a [batch_size, projection_dim] tensor.
-    # Not including addition because I wouldn't know which one to use
-    representation = tf.keras.layers.LayerNormalization(epsilon=1e-6)(cross_attention_output)
-    representation = tf.keras.layers.Flatten()(representation)
-    representation = tf.keras.layers.Dropout(0.5)(representation)
-    # Add MLP.
-    features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.5)
-    ff = tf.keras.layers.Dense(512)(features)
-    ff = tf.keras.layers.Dense(128)(ff)
-    # Classify outputs.
-    logits = tf.keras.layers.Dense(1, activation='sigmoid')(features)
-    # Create the Keras model.
-    model = tf.keras.Model(inputs=[im_A, im_B], outputs=logits)
+def get_transformer_model(embed_size=48):
+    # Inputs
+    im_a = tf.keras.layers.Input(shape=(64,128,1))
+    im_b = tf.keras.layers.Input(shape=(64,128,1))
+    # Encoder
+    encoder = get_encoder_model(embed_size)
+    feats_a = encoder(im_a)
+    feats_b = encoder(im_b)
+    # Difference module
+    distance = tf.keras.layers.Lambda(euclidean_distance)([feats_a, feats_b])
+    outputs = tf.keras.layers.Dense(1, activation='sigmoid')(distance)
+    model = tf.keras.models.Model(inputs=[im_a, im_b], outputs=outputs)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate),  ## feel free to change
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),  ## feel free to change
         loss="binary_crossentropy",  ## do not change loss/metrics
         metrics=["binary_accuracy"],
     )

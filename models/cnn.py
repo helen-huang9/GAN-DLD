@@ -1,10 +1,12 @@
 # Based on: https://pyimagesearch.com/2020/11/30/siamese-networks-with-keras-tensorflow-and-deep-learning/
 import numpy as np
 import tensorflow as tf
-from utils import euclidean_distance
+from utils import euclidean_distance, contrastive_loss
 
 def get_cnn_model(embed_size=48):
     cnn = tf.keras.Sequential([
+        # Rescale input
+        tf.keras.layers.Rescaling(scale=1/255),
         # First convolution layers
         tf.keras.layers.Conv2D(64, (2,2), padding='same', activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
@@ -30,7 +32,7 @@ def get_siamese_model(embed_size=48):
     model = tf.keras.models.Model(inputs=[im_a, im_b], outputs=outputs)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),  ## feel free to change
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),  ## feel free to change
         loss="binary_crossentropy",  ## do not change loss/metrics
         metrics=["binary_accuracy"],
     )

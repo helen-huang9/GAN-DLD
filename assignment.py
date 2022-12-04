@@ -15,7 +15,7 @@ def train_model(model_type, dataset):
     else:
         X0, Y0, X1, Y1 = get_CEDAR_siamese()
 
-    epochs = 1
+    epochs = 20
     batch_size = 50
 
     if model_type == 'transformer':
