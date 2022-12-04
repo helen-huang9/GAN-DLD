@@ -12,7 +12,8 @@ import os
 # Size of images to return
 L = 64
 W = 128
-
+# Random generator seed
+SEED=42
 # Labels
 GENUINE_LABEL = [1,0]
 FORGED_LABEL = [0,1]
@@ -177,7 +178,7 @@ def shuffle_data(data):
             X1: testing images,
             Y1: testing labels
     """
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed=SEED)
     rng.shuffle(data)
 
     split = int(len(data)*0.8)
@@ -243,16 +244,16 @@ def get_indian_siamese(language):
 
 def get_all_siamese():
     X0, Y0, X1, Y1 = get_CEDAR_siamese()
-    for lang in ['Bengali']:
-    # for lang in ['Bengali', 'Hindi']:
+    for lang in ['Bengali', 'Hindi']:
         a0, b0, a1, b1 = get_indian_siamese(lang)
         X0 = np.append(X0, a0, axis=0)
         Y0 = np.append(Y0, b0, axis=0)
         X1 = np.append(X1, a1, axis=0)
         Y1 = np.append(Y1, b1, axis=0)
     # Shuffle data
-    p0 = np.random.permutation(len(X0))
-    p1 = np.random.permutation(len(X1))
+    rng = np.random.default_rng(seed=SEED)
+    p0 = rng.permutation(len(X0))
+    p1 = rng.permutation(len(X1))
     print("Permutating train ims")
     X0 = X0[p0]
     print("Permutating train labels")
