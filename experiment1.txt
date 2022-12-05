@@ -1,0 +1,136 @@
+ACCURACY ON MODELS WITH SEEN SIGNATURES: 
+Model: CNN  Dataset: CEDAR
+Accuracy: 0.8981818181818182
+Precision: 1.0
+Recall: 0.768595041322314
+Confusion Matrix: 
+[[308   0]
+ [ 56 186]]
+************************************************************** 
+Model: Transformer  Dataset: CEDAR
+Accuracy: 0.44
+Precision: 0.44
+Recall: 1.0
+Confusion Matrix: 
+[[  0 308]
+ [  0 242]]
+************************************************************** 
+ACCURACY ON MODELS WITH UNSEEN SIGNATURES: 
+Model: CNN  Dataset: CEDAR
+Accuracy: 0.9333333333333333
+Precision: 1.0
+Recall: 0.8611111111111112
+Confusion Matrix: 
+[[78  0]
+ [10 62]]
+************************************************************** 
+Model: Transformer  Dataset: CEDAR
+Accuracy: 0.48
+Precision: 0.48
+Recall: 1.0
+Confusion Matrix: 
+[[ 0 78]
+ [ 0 72]]
+************************************************************** 
+ACCURACY ON MODELS WITH SEEN SIGNATURES: 
+Model: CNN  Dataset: BENGALI
+Accuracy: 0.8826923076923077
+Precision: 0.9168646080760094
+Recall: 0.8160676532769556
+Confusion Matrix: 
+[[532  35]
+ [ 87 386]]
+************************************************************** 
+Model: Transformer  Dataset: BENGALI
+Accuracy: 0.4548076923076923
+Precision: 0.4548076923076923
+Recall: 1.0
+Confusion Matrix: 
+[[  0 567]
+ [  0 473]]
+************************************************************** 
+ACCURACY ON MODELS WITH UNSEEN SIGNATURES: 
+Model: CNN  Dataset: BENGALI
+Accuracy: 0.8846153846153846
+Precision: 0.9821428571428571
+Recall: 0.7638888888888888
+Confusion Matrix: 
+[[83  1]
+ [17 55]]
+************************************************************** 
+Model: Transformer  Dataset: BENGALI
+Accuracy: 0.46153846153846156
+Precision: 0.46153846153846156
+Recall: 1.0
+Confusion Matrix: 
+[[ 0 84]
+ [ 0 72]]
+************************************************************** 
+ACCURACY ON MODELS WITH SEEN SIGNATURES: 
+Model: CNN  Dataset: HINDI
+Accuracy: 0.8155048076923077
+Precision: 0.7756041426927502
+Recall: 0.8575063613231552
+Confusion Matrix: 
+[[683 195]
+ [112 674]]
+************************************************************** 
+Model: Transformer  Dataset: HINDI
+Accuracy: 0.4723557692307692
+Precision: 0.4723557692307692
+Recall: 1.0
+Confusion Matrix: 
+[[  0 878]
+ [  0 786]]
+************************************************************** 
+ACCURACY ON MODELS WITH UNSEEN SIGNATURES: 
+Model: CNN  Dataset: HINDI
+Accuracy: 0.7756410256410257
+Precision: 0.6831683168316832
+Recall: 0.9583333333333334
+Confusion Matrix: 
+[[52 32]
+ [ 3 69]]
+************************************************************** 
+Model: Transformer  Dataset: HINDI
+Accuracy: 0.46153846153846156
+Precision: 0.46153846153846156
+Recall: 1.0
+Confusion Matrix: 
+[[ 0 84]
+ [ 0 72]]
+************************************************************** 
+ACCURACY ON MODELS WITH SEEN SIGNATURES: 
+Model: CNN  Dataset: ALL
+Accuracy: 0.8730792870313461
+Precision: 0.8425692695214105
+Recall: 0.8914057295136576
+Confusion Matrix: 
+[[1503  250]
+ [ 163 1338]]
+************************************************************** 
+Model: Transformer  Dataset: ALL
+Accuracy: 0.46127842655193607
+Precision: 0.46127842655193607
+Recall: 1.0
+Confusion Matrix: 
+[[   0 1753]
+ [   0 1501]]
+************************************************************** 
+ACCURACY ON MODELS WITH UNSEEN SIGNATURES: 
+Model: CNN  Dataset: ALL
+Accuracy: 0.8809523809523809
+Precision: 0.8609865470852018
+Recall: 0.8888888888888888
+Confusion Matrix: 
+[[215  31]
+ [ 24 192]]
+************************************************************** 
+Model: Transformer  Dataset: ALL
+Accuracy: 0.4675324675324675
+Precision: 0.4675324675324675
+Recall: 1.0
+Confusion Matrix: 
+[[  0 246]
+ [  0 216]]
+************************************************************** 
