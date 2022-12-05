@@ -9,7 +9,7 @@ For the CNN and Transformer:
     - Train models on each dataset while holding out some individuals signatures 
     - Compare test accuracies, expecting that the model doesn't accurately correct new signatures
 
-2. If the above is true, we want to know how long it takes for the model to learn a new signature?
+2. Can we train a model to learn a new signature?
 TODO: Lookup best practice for how to train with new samples in this case. Just do some epochs with new data?, Need to think about how this system would be used
     - Take the models from above that were trained with users held out, train with one pair at a time 
     - See how just training with new data effects old accuracy
@@ -119,15 +119,54 @@ def train_models(X0,Y0,dataset, filtered=False):
     transformer.save_weights('./transformer/'+name+'_'+dataset)
 
 
+def experiment_two(task):
+    """
+    Proves we can get the model to train to recognize 3 signatures perfectly
+    Model pre-trained on other languages trains faster
+    Use task 1 for CNN, 2 for transformer
+
+    The CNN seems to learn faster than the Transformer for this task
+    """
+    if task == '1':
+        partial, full = get_siamese_model(), get_siamese_model()
+        partial.load_weights('./cnn/filtered_cedar')
+        full.load_weights('./cnn/filtered_all')
+    elif task == '2':
+        partial, full = get_transformer_model(), get_transformer_model()
+        partial.load_weights('./transformer/filtered_cedar')
+        full.load_weights('./transformer/filtered_all')
+
+    _, _, x1, y1 = get_filtered_dataset('cedar')
+    split = int(len(y1) * 0.8)
+    X_train, Y_train = x1[:split], y1[:split]
+    X_val, Y_val = x1[split:], y1[split:]
+    print("Training CEDAR model")
+    partial.fit(
+        [X_train[:,0], X_train[:,1]], Y_train,
+        epochs      = 30,
+        batch_size  = 20,
+        validation_data = ([X_val[:,0], X_val[:,1]], Y_val)
+    )
+    print("Training model trained on all")
+    full.fit(
+        [X_train[:,0], X_train[:,1]], Y_train,
+        epochs      = 10,
+        batch_size  = 20,
+        validation_data = ([X_val[:,0], X_val[:,1]], Y_val)
+    )
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Process some integers.")
-    parser.add_argument("--exp",    default='1',     choices='1 2 3 4'.split(), help="Experiment to run")
+    parser.add_argument("--exp",    default='1',     choices='1 2'.split(), help="Experiment to run")
     parser.add_argument("--task",    default='all',     choices='1 2 3 all'.split(), help="Experiment to run")
     args = parser.parse_args()
 
     if args.exp == '1':
         exp = experiment_one
+    elif args.exp == '2':
+        assert(args.task in ['1','2'])
+        exp = experiment_two
 
     exp(args.task)
