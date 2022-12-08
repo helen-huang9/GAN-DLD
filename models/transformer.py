@@ -69,7 +69,7 @@ def get_encoder_model(embed_size=48):
     ])
     return encoder
 
-def get_transformer_model(embed_size=48):
+def get_siamese_transformer(embed_size=48):
     # Inputs
     im_a = tf.keras.layers.Input(shape=(64,128,1))
     im_b = tf.keras.layers.Input(shape=(64,128,1))
@@ -88,3 +88,23 @@ def get_transformer_model(embed_size=48):
         metrics=["binary_accuracy"],
     )
     return model              
+
+def get_basic_transformer():
+    encoder = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(64,128,1)),
+        # Rescale input
+        tf.keras.layers.Rescaling(scale=1/255),
+        # Encoding
+        Patches(patch_size),
+        PatchEncoder(num_patches, projection_dim),
+        EncoderBlock(emb_sz=projection_dim, num_heads=num_heads),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(48),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+    encoder.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),  ## feel free to change
+        loss="binary_crossentropy",  ## do not change loss/metrics
+        metrics=["binary_accuracy"],
+    )
+    return encoder

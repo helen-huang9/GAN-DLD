@@ -1,9 +1,10 @@
 from preprocess import *
 from models.cnn import get_siamese_model
-from models.transformer import get_transformer_model
+from models.transformer import get_transformer_model, get_basic_transformer
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
 
+# Not being used - experiments is being used instead
 
 def train_model(model_type, dataset, task):
     if dataset == 'all':
@@ -11,9 +12,12 @@ def train_model(model_type, dataset, task):
     elif dataset == 'bengali':
         X0, Y0, X1, Y1 = get_indian_siamese('Bengali')
     elif dataset == 'hindi':
-        X0, Y0, X1, Y1 = get_indian_siamese('Hindi')
+        X0, Y0, X1, Y1 = get_hindi()
+        # X0, Y0, X1, Y1 = get_indian_siamese('Hindi')
     else:
-        X0, Y0, X1, Y1 = get_CEDAR_siamese()
+        from experiment_helpers import get_CEDAR_single
+        X0, Y0, X1, Y1 = get_CEDAR_single()
+        # X0, Y0, X1, Y1 = get_CEDAR_siamese()
 
     X_test, Y_test = X1[:len(X1)//2], Y1[:len(Y1)//2]
     X_val, Y_val = X1[len(X1)//2:], Y1[len(Y1)//2:]
@@ -23,17 +27,18 @@ def train_model(model_type, dataset, task):
     batch_size = 50
     if task in ['train', 'both']:
         if model_type == 'transformer':
-            model = get_transformer_model()
+            # model = get_transformer_model()
+            model = get_basic_transformer()
             model.summary()
         else:
             model = get_siamese_model()  # CNN Model Default
 
         print("Starting to train model")
         history = model.fit(
-            [X0[:,0], X0[:,1]], Y0,
+            X0, Y0,
             epochs      = epochs,
             batch_size  = batch_size,
-            validation_data = ([X_val[:,0], X_val[:,1]], Y_val)
+            validation_data = (X_val, Y_val)
         )
         model.save_weights('./transformer/weights')
     #############################################################
