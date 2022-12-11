@@ -48,4 +48,4 @@ def contrastive_loss(y, preds, margin=1):
 	squaredMargin = K.square(K.maximum(margin - preds, 0))
 	loss = K.mean(y * squaredPreds + (1 - y) * squaredMargin)
 	# return the computed contrastive loss to the calling function
-	return loss
+	return -loss

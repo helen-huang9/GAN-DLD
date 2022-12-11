@@ -39,38 +39,78 @@ def experiment_one(task):
         - as a binary classifier (task 2)
         - and evaluates them (task 3)
     """
-    for dataset in ['cedar', 'bengali', 'hindi', 'all']:
-    # for dataset in ['hindi', 'all']:
+    # for dataset in ['cedar', 'bengali', 'hindi', 'all']:
+    for dataset in ['all']:
         if task in ['1', 'all']:
             # X0, Y0, X1, Y1 = get_filtered_dataset(dataset)
             X0, Y0, X1, Y1 = get_siamese_dataset(dataset)
             split = int(len(Y0) * 0.8)
             X_train, Y_train = X0[:split], Y0[:split]
+            X_val, Y_val = X0[split:], Y0[split:]
             X_train = [X_train[:,0], X_train[:,1]]
+            # Add unseen to validation
+            split = int(len(Y1) * 0.8)
+            Y_val = np.append(Y_val, Y1[split:], axis=0)
+            X_val = np.append(X_val, X1[split:], axis=0)
+            X_val = [X_val[:,0], X_val[:,1]]
             cnn = get_siamese_cnn()
             transformer = get_siamese_transformer()
             print("TRAINING SIAMESE CNN")
-            if dataset != 'hindi':
-                not_a_gan_train(cnn, X_train, Y_train, dataset+'_siamese',True)
+            # not_a_gan_train(cnn, X_train, Y_train, X_val, Y_val, dataset+'_siamese',True)
             print("TRAINING SIAMESE TRANSFORMER")
-            not_a_gan_train(transformer, X_train, Y_train, dataset+'_siamese',False)
+            not_a_gan_train(transformer, X_train, Y_train, X_val, Y_val, dataset+'_siamese',False)
         if task in ['2', 'all']:
             X0, Y0, X1, Y1 = get_singles_dataset(dataset)
             split = int(len(Y0) * 0.8)
             X_train, Y_train = X0[:split], Y0[:split]
+            X_val, Y_val = X0[split:], Y0[split:]
+            split = int(len(Y1) * 0.8)
+            Y_val = np.append(Y_val, Y1[split:], axis=0)
+            X_val = np.append(X_val, X1[split:], axis=0)
             cnn = get_basic_cnn()
             transformer = get_basic_transformer()
             print("TRAINING SINGLES CNN")
-            not_a_gan_train(cnn, X_train, Y_train, dataset + '_single', isCnn=True)
+            not_a_gan_train(cnn, X_train, Y_train, X_val, Y_val, dataset + '_single', isCnn=True)
             print("TRAINING SINGLES TRANSFORMER")
-            not_a_gan_train(transformer, X_train, Y_train, dataset + '_single', False)
+            not_a_gan_train(transformer, X_train, Y_train,  X_val, Y_val, dataset + '_single', False)
+    if task in ['3', 'all']:
+        test_models()
 
-def test_model(X1, Y1, model, dataset, isCnn=True, isUnseen=False):
-    name = 'CNN' if isCnn else 'Transformer'
-    seen = 'unseen' if isUnseen else 'seen'
-    y_pred = tf.round(model.predict([X1[:,0], X1[:,1]]))
+def test_models():
+    for dataset in ['cedar', 'bengali', 'hindi', 'all']:
+        # Test Siamese Models
+        # X0, Y0, X1, Y1 = get_siamese_dataset(dataset)
+        # split = int(len(Y0) * 0.8)
+        # X_val, Y_val = X0[split:], Y0[split:]
+        # X_val = [X_val[:,0], X_val[:,1]]
+        # X_test, Y_test = [X1[:,0], X1[:,1]], Y1
+        # cnn = get_siamese_cnn()
+        # transformer = get_siamese_transformer()
+        # cnn.load_weights('./cnn/'+dataset+'_siamese')
+        # transformer.load_weights('./transformer/'+dataset+'_siamese')
+        # test_model(cnn,         X_val,Y_val,    dataset.upper(),    subset='Validation', name='Siamese CNN')
+        # test_model(cnn,         X_test ,Y_test, dataset.upper(),    subset='Test',       name='Siamese CNN')
+        # test_model(transformer, X_val,Y_val,    dataset.upper(),    subset='Validation', name='Siamese Transformer')
+        # test_model(transformer, X_test,Y_test,  dataset.upper(),    subset='Test',       name='Siamese Transformer')
+        # Test Singles Models
+        X0, Y0, X1, Y1 = get_singles_dataset(dataset)
+        split = int(len(Y0) * 0.8)
+        X_val, Y_val = X0[split:], Y0[split:]
+        X_test, Y_test = X1, Y1
+        cnn = get_basic_cnn()
+        transformer = get_basic_transformer()
+        cnn.load_weights('./cnn/'+dataset+'_single')
+        transformer.load_weights('./transformer/'+dataset+'_single')
+        test_model(cnn,         X_val,Y_val,    dataset.upper(),    subset='Validation', name='Basic CNN')
+        test_model(cnn,         X_test ,Y_test, dataset.upper(),    subset='Test',       name='Basic CNN')
+        test_model(transformer, X_val,Y_val,    dataset.upper(),    subset='Validation', name='Basic Transformer')
+        test_model(transformer, X_test,Y_test,  dataset.upper(),    subset='Test',       name='Basic Transformer')
+
+
+def test_model(model, X, Y, dataset, subset, name):
+    y_pred = tf.round(model.predict(X))
     y_pred = tf.reshape(y_pred, (-1,1))
-    confusion = confusion_matrix(Y1, y_pred)
+    confusion = confusion_matrix(Y, y_pred)
     tn = confusion[0,0]
     tp = confusion[1,1]
     fn = confusion[1,0]
@@ -79,8 +119,8 @@ def test_model(X1, Y1, model, dataset, isCnn=True, isUnseen=False):
     recall = tp/(tp+fn)
     accuracy = (tp+tn)/(tp+fp+fn+tn)
     f = open('experiment1.txt', 'a') 
-    f.write("Model: " + name +  "  Dataset: " + dataset.upper() + "  Signatures: " + seen + "\n")
-    print("Model: ", name, "  Dataset: ", dataset.upper(), " Signatures: ", seen)
+    f.write("Model: " + name +  "  Dataset: " + dataset + "  Subset: " + subset + "\n")
+    print("Model: " + name +  "  Dataset: " + dataset + "  Subset: " + subset + "\n")
     f.write('Accuracy: ' + str(accuracy) + '\n')
     f.write('Precision: ' + str(precision) + '\n')
     f.write('Recall: ' + str(recall) + '\n')
@@ -92,15 +132,19 @@ def test_model(X1, Y1, model, dataset, isCnn=True, isUnseen=False):
     print('Confusion Matrix: \n')
     print(str(confusion))
 
-def not_a_gan_train(model, X_train, Y_train, dataset, isCnn):
+def not_a_gan_train(model, X_train, Y_train, X_val, Y_val, dataset, isCnn):
     name = 'cnn' if isCnn else 'transformer'
+    log_dir = './logs/'+name+'_'+dataset
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir)
+
     epochs = 20
     batch_size = 50
     model.fit(
             X_train, Y_train,
             epochs      = epochs,
-            batch_size  = batch_size
-            # validation_data = (X_train[:50], Y_train[:50])
+            batch_size  = batch_size,
+            callbacks = [tensorboard_callback],
+            validation_data = (X_val, Y_val)
         )
     model.save_weights('./'+name+'/'+dataset)
 

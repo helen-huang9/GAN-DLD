@@ -1,7 +1,7 @@
 # Based on: https://pyimagesearch.com/2020/11/30/siamese-networks-with-keras-tensorflow-and-deep-learning/
 import numpy as np
 import tensorflow as tf
-from utils import euclidean_distance
+from utils import euclidean_distance, contrastive_loss
 
 def get_cnn_model(embed_size=48):
     cnn = tf.keras.Sequential([
